@@ -20,7 +20,9 @@ class ClusterCascadeClassifier:
     def fit(self, entries, labels):
         self.labels_dtype = labels.dtype
         frame = pd.DataFrame(data={'data': entries, 'label': labels})
-        frame['vector'] = frame['data'].apply(self.vectorize_func)
+
+        flatten = lambda arr: [row for row in arr]
+        frame['vector'] = flatten(self.vectorize_func(frame['data'].to_numpy()))
         frame['cluster'] = self.clustering_func(frame)
 
         cluster_vectors, clusters = frame['data'].reset_index(drop=True), frame['cluster'].to_numpy()
