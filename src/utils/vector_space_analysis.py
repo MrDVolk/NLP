@@ -46,12 +46,12 @@ def clusterize_by_distance(dataframe, group_column='label', vector_column='vecto
     return map_group_to_cluster(dataframe, group_column, group_description_df)
 
 
-def clusterize_by_vectors(dataframe, group_column='label', vector_column='vector', *, cluster_count=3):
+def clusterize_by_vectors(dataframe, group_column='label', vector_column='vector', *, cluster_count=3, random_state=None):
     group_description_df = get_vectorized_group_description(dataframe, group_column, vector_column)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        kmeans = KMeans(n_clusters=cluster_count)
+        kmeans = KMeans(n_clusters=cluster_count, random_state=random_state)
         group_description_df['cluster'] = kmeans.fit_predict(np.vstack(group_description_df[vector_column]))
 
     return map_group_to_cluster(dataframe, group_column, group_description_df)

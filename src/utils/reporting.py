@@ -53,7 +53,7 @@ def get_cross_validation_report(X, y, *, n_splits=5, model_factory=None, seed=No
     return weighted_f1, report_df, confusion_df
 
 
-def save_reports(model_name, classification_report_df, confusion_report_df, f1_weighted, *, default_path='data/reports'):
+def save_reports(model_name, classification_report_df, confusion_report_df, f1_weighted, *, default_path='data/reports', additional_frames=None):
     folder_path = os.path.join(default_path, model_name)
     os.makedirs(folder_path, exist_ok=True)
 
@@ -61,3 +61,7 @@ def save_reports(model_name, classification_report_df, confusion_report_df, f1_w
     confusion_report_df.to_excel(f'{folder_path}/confusion_report.xlsx')
     with open(f'{folder_path}/f1_weighted.txt', 'w+') as file:
         file.write(str(f1_weighted))
+
+    if additional_frames is not None:
+        for doc_name, frame in additional_frames.items():
+            frame.to_excel(f'{folder_path}/{doc_name}.xlsx')
