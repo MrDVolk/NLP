@@ -15,8 +15,10 @@ class ClusterCascadeClassifier:
 
         self.cluster_classifier = None
         self.cluster_classifiers_map = dict()
+        self.labels_dtype = np.dtype('int64')
 
     def fit(self, entries, labels):
+        self.labels_dtype = labels.dtype
         frame = pd.DataFrame(data={'data': entries, 'label': labels})
         frame['vector'] = frame['data'].apply(self.vectorize_func)
         frame['cluster'] = self.clustering_func(frame)
@@ -39,7 +41,7 @@ class ClusterCascadeClassifier:
         return self
 
     def predict(self, entries):
-        results = np.zeros((entries.shape[0],))
+        results = np.empty((entries.shape[0],), dtype=self.labels_dtype)
 
         cluster_prediction = self.cluster_classifier.predict(entries)
         unique_clusters = np.unique(cluster_prediction)
