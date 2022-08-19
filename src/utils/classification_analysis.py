@@ -4,7 +4,7 @@ from .reporting import *
 from tqdm import tqdm
 
 
-def get_debug_classification_report(dataframe, entry_column, label_column, *, n_splits=5, model_factory=None, seed=None):
+def get_debug_cross_validation_report(dataframe, entry_column, label_column, *, n_splits=5, model_factory=None, seed=None):
     if model_factory is None:
         model_factory = lambda: RandomForestClassifier(random_state=seed)
 
@@ -83,7 +83,7 @@ def _get_misclassifications_base(confusion_df, priority_func, priority_column):
             })
 
     misclassification_df = pd.DataFrame(misclassifications)
-    misclassification_df['priority'] = MinMaxScaler().fit_transform(misclassification_df[priority_column].values.reshape(-1, 1))
+    misclassification_df['priority'] = get_scaled_column(misclassification_df[priority_column])
 
     misclassification_df = misclassification_df.sort_values('priority', ascending=False)
     return misclassification_df.reset_index(drop=True)
@@ -103,9 +103,44 @@ def get_misclassifications_report(confusion_df, *, calculate_improvements=False)
         return _get_misclassifications_base(confusion_df, priority_func, 'count')
 
 
-def get_class_reliability(classification_df):
+def get_label_reliability(classification_df):
     scaled_support = MinMaxScaler().fit_transform(classification_df['support'].values.reshape(-1, 1)).reshape(-1)
-    classification_df['reliability'] = scaled_support * classification_df['f1']
-    classification_df['reliability'] = MinMaxScaler().fit_transform(classification_df['reliability'].values.reshape(-1, 1))
+    if len(np.unique(scaled_support)) == 1:
+        scaled_support = 1.0
+    classification_df['reliability'] = get_scaled_column(scaled_support * classification_df['f1'])
     return classification_df.sort_values('reliability', ascending=False)
 
+
+def get_scaled_column(column, scaler=None):
+    if scaler is None:
+        scaler = MinMaxScaler()
+    return scaler.fit_transform(column.values.reshape(-1, 1)).reshape(-1)
+
+
+def get_label_errors(confusion_df, report_df, *, ignore_label=None):
+    results = []
+    for index in tqdm(confusion_df.index):
+        true_label = index.replace('True ', '')
+        if true_label == ignore_label:
+            continue
+
+        label_error_count = 0
+        for column in confusion_df.columns:
+            predicted_label = column.replace('Pred ', '')
+            if predicted_label == true_label:
+                continue
+
+            value = confusion_df.loc[index, column]
+            label_error_count += value
+
+        label_error_score = 1 - report_df.loc[true_label, 'f1']
+        results.append({
+            'label': true_label,
+            'error_count': label_error_count,
+            'error_score': label_error_score,
+        })
+
+    results_df = pd.DataFrame(results)
+    results_df['priority'] = get_scaled_column(results_df['error_count'] * results_df['error_score'])
+
+    return results_df.sort_values('priority', ascending=False)
