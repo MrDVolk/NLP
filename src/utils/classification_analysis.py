@@ -57,7 +57,7 @@ def get_possible_f1_improvement(calculate_f1, default_f1, predicted_label, true_
 def _get_misclassifications_base(confusion_df, priority_func, priority_column):
     misclassifications = []
     misclassifications_set = set()
-    for index in confusion_df.index:
+    for index in tqdm(confusion_df.index):
         true_label = index.replace('True ', '')
 
         for column in confusion_df.columns:
@@ -70,6 +70,10 @@ def _get_misclassifications_base(confusion_df, priority_func, priority_column):
             if key in misclassifications_set:
                 continue
             misclassifications_set.add(key)
+
+            value = confusion_df.loc[index, column]
+            if value == 0:
+                continue
 
             priority_value = priority_func(confusion_df, true_label, predicted_label)
             misclassifications.append({
@@ -97,3 +101,11 @@ def get_misclassifications_report(confusion_df, *, calculate_improvements=False)
     else:
         priority_func = lambda df, true_label, predicted_label: confusion_df.loc[f'True {true_label}', f'Pred {predicted_label}']
         return _get_misclassifications_base(confusion_df, priority_func, 'count')
+
+
+def get_class_reliability(classification_df):
+    scaled_support = MinMaxScaler().fit_transform(classification_df['support'].values.reshape(-1, 1)).reshape(-1)
+    classification_df['reliability'] = scaled_support * classification_df['f1']
+    classification_df['reliability'] = MinMaxScaler().fit_transform(classification_df['reliability'].values.reshape(-1, 1))
+    return classification_df.sort_values('reliability', ascending=False)
+

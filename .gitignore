@@ -227,3 +227,4 @@ fabric.properties
 
 /embedding_vectors/*
 data/Reviews.csv
+data/text_emotion.csv

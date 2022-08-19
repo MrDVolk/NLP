@@ -1,6 +1,7 @@
 import mmap
 import numpy as np
 from tqdm import tqdm
+from gensim.models import KeyedVectors
 
 
 def get_num_lines(file_path):
@@ -27,11 +28,22 @@ def load_embeddings(path):
     return embeddings_dict
 
 
+def load_embeddings_from_gensim_format(path):
+    embeddings = KeyedVectors.load_word2vec_format(path, binary=True)
+    embeddings_dict = {}
+    for word in tqdm(embeddings.key_to_index):
+        embeddings_dict[word] = embeddings[word]
+
+    return embeddings_dict
+
+
 def average_vectorizations(row, embeddings_dict):
     vectors = []
     for word in row.split():
         if word in embeddings_dict:
             vectors.append(embeddings_dict[word])
 
-    result_vector = np.mean(vectors, axis=0)
-    return result_vector
+    if len(vectors) == 0:
+        return np.zeros(300)
+
+    return np.mean(vectors, axis=0)

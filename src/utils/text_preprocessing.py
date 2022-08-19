@@ -15,7 +15,7 @@ def remove_html(row):
     return row
 
 
-def remove_stop_words(row):
+def remove_stopwords(row):
     words = row.split(' ')
     row = ' '.join([word for word in words if word not in english_stopwords])
     return row
@@ -31,7 +31,7 @@ def remove_hyperlinks(row):
     return row
 
 
-def preprocess_text(row):
+def preprocess_text(row, removing_stopwords=True):
     row = remove_html(row)
 
     row = row.lower()
@@ -40,7 +40,12 @@ def preprocess_text(row):
 
     row = remove_email(row)
     row = remove_hyperlinks(row)
-    row = remove_stop_words(row)
+
+    if removing_stopwords:
+        row = remove_stopwords(row)
+
+    # remove tweet handles
+    row = re.sub(r'@\S+', '', row)
 
     row = re.sub(r'[^a-z ]', ' ', row)
     row = re.sub(r'[a-z]{35,}', ' ', row)
